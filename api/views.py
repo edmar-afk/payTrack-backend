@@ -143,7 +143,7 @@ class PaymentCreateView(APIView):
             payment = serializer.save(
                 student=student,
                 payment_type=committee,
-                status="Pending"
+
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -194,8 +194,6 @@ class CommitteePaymentsView(APIView):
         }, status=status.HTTP_200_OK)
 
 
-
-
 class PaymentFeedbackView(APIView):
     def post(self, request, pk):
         payment = get_object_or_404(Payment, pk=pk)
@@ -210,14 +208,21 @@ class PaymentFeedbackView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 class LatestFeedbackView(APIView):
     def get(self, request, payment_id):
         payment = get_object_or_404(Payment, id=payment_id)
-        latest_feedback = Feedback.objects.filter(payments=payment).order_by("-date_issued").first()
-        
+        latest_feedback = Feedback.objects.filter(
+            payments=payment).order_by("-date_issued").first()
+
         if not latest_feedback:
             return Response({"detail": "No feedback found for this payment."}, status=status.HTTP_404_NOT_FOUND)
-        
+
         serializer = LatestFeedbackSerializer(latest_feedback)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class DeletePaymentView(APIView):
+    def delete(self, request, payment_id):
+        payment = get_object_or_404(Payment, id=payment_id)
+        payment.delete()
+        return Response({"detail": "Payment deleted successfully."}, status=status.HTTP_204_NO_CONTENT)

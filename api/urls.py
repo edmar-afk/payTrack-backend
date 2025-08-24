@@ -14,6 +14,7 @@ urlpatterns = [
     # feedback route must be before the generic user_id/committee_name route
     path("payments/<int:pk>/feedback/", views.PaymentFeedbackView.as_view(), name="payment-feedback"),
     path("payments/<int:payment_id>/latest-feedback/", views.LatestFeedbackView.as_view(), name="latest-feedback"),
+    path('payments/<int:payment_id>/delete/', views.DeletePaymentView.as_view(), name='delete-payment'),
     
     path("committees/post/", views.ComitteePostView.as_view(), name="committee-post"),
     path("payments/list/<str:name>/", views.ComitteeListView.as_view(), name="comittee-list"),
