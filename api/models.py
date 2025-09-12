@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import FileExtensionValidator
-
+from django.core.validators import MinValueValidator
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -10,14 +10,6 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
-
-
-class Comittee(models.Model):
-    name = models.TextField()
-    details = models.TextField(blank=True, null=True)
-    amount = models.TextField()
-    deadline = models.TextField()
-    date_posted = models.DateTimeField(auto_now_add=True)
 
 
 class Payment(models.Model):
@@ -29,13 +21,16 @@ class Payment(models.Model):
         validators=[FileExtensionValidator(
             allowed_extensions=['jpg', 'jpeg', 'png', 'webp'])]
     )
-    payment = models.TextField()
-    payment_type = models.ForeignKey(Comittee, on_delete=models.CASCADE)
+    comittee_name = models.TextField(blank=True, null=True)
+    amount = models.FloatField(
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0)]
+    )
+    semester = models.TextField(blank=True, null=True)
+    status = models.TextField(blank=True, null=True, default="Pending")
+    feedback = models.TextField(blank=True, null=True)
+    payment = models.TextField(blank=True, null=True)
     date_issued = models.DateTimeField(auto_now_add=True)
 
 
-class Feedback(models.Model):
-    payments = models.ForeignKey(Payment, on_delete=models.CASCADE)
-    status = models.TextField()
-    feedback = models.TextField()
-    date_issued = models.DateTimeField(auto_now_add=True)

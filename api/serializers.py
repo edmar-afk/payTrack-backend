@@ -1,12 +1,26 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Profile, Payment, Comittee, Feedback
-
+from .models import Profile, Payment
+from django.db.models import Sum
 
 class UserSerializer(serializers.ModelSerializer):
+    profile = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = '__all__'
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'profile']
+
+    def get_profile(self, obj):
+        try:
+            profile = obj.profile
+            return {
+                "id": profile.id,
+                "year_lvl": profile.year_lvl,
+                "course": profile.course
+            }
+        except Profile.DoesNotExist:
+            return None
+
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -43,68 +57,95 @@ class PaymentSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "student", "date_issued", "payment_type"]
 
     def create(self, validated_data):
-        request = self.context.get("request")
-        if request and hasattr(request, "user"):
-            validated_data["student"] = request.user
         return super().create(validated_data)
 
 
-class ComitteeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Comittee
-        fields = ["id", "name", "details", "amount", "deadline", "date_posted"]
-
-
-class StudentPaymentSerializer(serializers.ModelSerializer):
-    student = serializers.SerializerMethodField()
-    payment_type = ComitteeSerializer(read_only=True)
+class PaymentSerializer(serializers.ModelSerializer):
+    student = UserSerializer(read_only=True)
 
     class Meta:
         model = Payment
         fields = [
-            "id",
-            "student",
-            "proof",
-            "payment",
-            "payment_type",
-
-            "date_issued",
+            'id',
+            'student',       # full user + profile details
+            'proof',
+            'comittee_name',
+            'amount',
+            'semester',
+            'status',
+            'feedback',
+            'payment',
+            'date_issued',
         ]
+    
 
-    def get_student(self, obj):
-        profile = getattr(obj.student, "profile", None)
-        if profile:
-            return {
-                "username": obj.student.username,
-                "first_name": obj.student.first_name,
-                "last_name": obj.student.last_name,
-                "year_lvl": profile.year_lvl,
-                "course": profile.course,
-            }
-        return {
-            "username": obj.student.username,
-            "first_name": obj.student.first_name,
-            "last_name": obj.student.last_name,
-            "year_lvl": "",
-            "course": "",
+class PaymentEditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ['proof', 'comittee_name', 'amount', 'semester', 'status', 'feedback', 'payment']
+        extra_kwargs = {
+            'proof': {'required': False},
+            'comittee_name': {'required': False},
+            'amount': {'required': False},
+            'semester': {'required': False},
+            'status': {'required': False},
+            'feedback': {'required': False},
+            'payment': {'required': False},
         }
-
-
-
-class FeedbackSerializer(serializers.ModelSerializer):
+        
+        
+class PaymentDetailSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Feedback
-        fields = ["id", "payments", "status", "feedback", "date_issued"]
-        read_only_fields = ["id", "date_issued", "payments"]  # <-- add payments here
-
-    def create(self, validated_data):
-        payment = self.context.get("payment")
-        if payment:
-            validated_data["payments"] = payment
-        return super().create(validated_data)
-    
-    
-class LatestFeedbackSerializer(serializers.ModelSerializer):
+        model = Payment
+        fields = [
+            'id',
+            'status',
+            'feedback',
+            'payment',
+            'amount',
+            'proof',
+            'date_issued',
+        ]
+        
+        
+class PaymentDeleteSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Feedback
-        fields = ["id", "status", "feedback", "date_issued"]
+        model = Payment
+        fields = '__all__'
+        
+        
+class PaymentSubmitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ['proof', 'payment', 'semester']
+        
+
+
+class PaymentTypeSerializer(serializers.ModelSerializer):
+    student = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Payment
+        fields = '__all__'
+        
+        
+class CommitteePaymentTotalSerializer(serializers.Serializer):
+    comittee_name = serializers.CharField()
+    total_amount = serializers.FloatField()
+    count = serializers.IntegerField()
+
+    def get_total_amount(self, obj):
+        comittee_name = self.context.get('comittee_name')
+        payments = Payment.objects.filter(comittee_name=comittee_name)
+        total = 0
+        for p in payments:
+            try:
+                total += float(p.amount or 0)
+            except ValueError:
+                continue
+        return total
+
+    def get_count(self, obj):
+        comittee_name = self.context.get('comittee_name')
+        payments = Payment.objects.filter(comittee_name=comittee_name)
+        return payments.count()
