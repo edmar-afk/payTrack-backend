@@ -76,6 +76,11 @@ class PaymentSerializer(serializers.ModelSerializer):
             'feedback',
             'payment',
             'date_issued',
+            'cf',
+            'lac',
+            'pta',
+            'qaa',
+            'rhc',
         ]
     
 
@@ -105,6 +110,11 @@ class PaymentDetailSerializer(serializers.ModelSerializer):
             'amount',
             'proof',
             'date_issued',
+            'cf',
+            'lac',
+            'pta',
+            'qaa',
+            'rhc',
         ]
         
         

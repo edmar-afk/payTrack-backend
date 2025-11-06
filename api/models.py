@@ -32,5 +32,10 @@ class Payment(models.Model):
     feedback = models.TextField(blank=True, null=True)
     payment = models.TextField(blank=True, null=True)
     date_issued = models.DateTimeField(auto_now_add=True)
-
+    
+    cf = models.TextField(blank=True, null=True)
+    lac = models.TextField(blank=True, null=True)
+    pta = models.TextField(blank=True, null=True)
+    qaa = models.TextField(blank=True, null=True)
+    rhc = models.TextField(blank=True, null=True)
 
