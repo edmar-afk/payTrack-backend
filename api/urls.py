@@ -17,4 +17,7 @@ urlpatterns = [
     path('submit-payment/<int:user_id>/', views.PaymentSubmitView.as_view(), name='submit-payment'),
     path('payment-type/<str:comittee_name>/', views.PaymentByCommitteeView.as_view(), name='payment-by-committee'),
     path('total-amount/<str:comittee_name>/', views.CommitteeTotalAmountView.as_view()),
+    
+    path('payment_filter/<int:student_id>/', views.StudentPaymentsView.as_view(), name='payment_filter'),
+
 ]

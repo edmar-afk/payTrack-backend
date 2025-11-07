@@ -76,6 +76,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             'feedback',
             'payment',
             'date_issued',
+            'school_year',
             'cf',
             'lac',
             'pta',
@@ -110,6 +111,7 @@ class PaymentDetailSerializer(serializers.ModelSerializer):
             'amount',
             'proof',
             'date_issued',
+            'school_year',
             'cf',
             'lac',
             'pta',
@@ -127,7 +129,12 @@ class PaymentDeleteSerializer(serializers.ModelSerializer):
 class PaymentSubmitSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
-        fields = ['proof', 'payment', 'semester']
+        fields = ['proof', 'payment', 'semester', 'school_year',
+            'cf',
+            'lac',
+            'pta',
+            'qaa',
+            'rhc',]
         
 
 
