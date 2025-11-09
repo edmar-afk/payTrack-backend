@@ -39,3 +39,13 @@ class Payment(models.Model):
     qaa = models.TextField(blank=True, null=True)
     rhc = models.TextField(blank=True, null=True)
 
+
+class PaymentProof(models.Model):
+    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="proofs")
+    proof = models.ImageField(
+        upload_to='payment_proofs/',
+        blank=True,
+        null=True,
+        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png', 'webp'])]
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)

@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Profile, Payment
+from .models import Profile, Payment, PaymentProof
 
 admin.site.register(Profile)
 admin.site.register(Payment)
+admin.site.register(PaymentProof)

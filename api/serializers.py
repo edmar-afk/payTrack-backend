@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Profile, Payment
+from .models import Profile, Payment, PaymentProof
 from django.db.models import Sum
 
 class UserSerializer(serializers.ModelSerializer):
@@ -166,3 +166,20 @@ class CommitteePaymentTotalSerializer(serializers.Serializer):
         comittee_name = self.context.get('comittee_name')
         payments = Payment.objects.filter(comittee_name=comittee_name)
         return payments.count()
+
+
+
+class PaymentProofSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PaymentProof
+        fields = ['id', 'payment', 'proof', 'uploaded_at']
+        read_only_fields = ['id', 'uploaded_at', 'payment']
+        
+        
+
+class CommitteeTotalsSerializer(serializers.Serializer):
+    cf_total = serializers.FloatField()
+    lac_total = serializers.FloatField()
+    pta_total = serializers.FloatField()
+    qaa_total = serializers.FloatField()
+    rhc_total = serializers.FloatField()

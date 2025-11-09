@@ -7,12 +7,14 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser, FormParser
-from .serializers import CommitteePaymentTotalSerializer, PaymentTypeSerializer, PaymentSubmitSerializer,PaymentEditSerializer, RegisterSerializer, ProfileSerializer, PaymentSerializer, PaymentDetailSerializer, PaymentDeleteSerializer
-from .models import Profile, Payment
+from .serializers import CommitteeTotalsSerializer, PaymentProofSerializer, CommitteePaymentTotalSerializer, PaymentTypeSerializer, PaymentSubmitSerializer,PaymentEditSerializer, RegisterSerializer, ProfileSerializer, PaymentSerializer, PaymentDetailSerializer, PaymentDeleteSerializer
+from .models import Profile, Payment, PaymentProof
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import UpdateAPIView, GenericAPIView
-
+from rest_framework.generics import ListAPIView
+from rest_framework.exceptions import NotFound
+from django.db.models import Sum
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -142,3 +144,95 @@ class StudentPaymentsView(APIView):
 
         serializer = PaymentTypeSerializer(payments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+class UpdatePaymentView(APIView):
+    def put(self, request, payment_id):
+        try:
+            payment = Payment.objects.get(id=payment_id)
+        except Payment.DoesNotExist:
+            return Response({"message": "Payment not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        data = {
+            "cf": float(payment.cf or 0) + float(request.data.get("cf", 0)),
+            "lac": float(payment.lac or 0) + float(request.data.get("lac", 0)),
+            "pta": float(payment.pta or 0) + float(request.data.get("pta", 0)),
+            "qaa": float(payment.qaa or 0) + float(request.data.get("qaa", 0)),
+            "rhc": float(payment.rhc or 0) + float(request.data.get("rhc", 0)),
+        }
+
+
+
+
+        serializer = PaymentDetailSerializer(payment, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+class UploadPaymentProofView(APIView):
+    def post(self, request, payment_id):
+        try:
+            payment = Payment.objects.get(id=payment_id)
+        except Payment.DoesNotExist:
+            return Response({"error": "Payment not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        files = request.FILES.getlist('proofs')
+        if not files:
+            return Response({"error": "No files uploaded."}, status=status.HTTP_400_BAD_REQUEST)
+
+        proofs = []
+        for file in files:
+            proof_instance = PaymentProof(payment=payment, proof=file)
+            proof_instance.save()
+            proofs.append(proof_instance)
+
+        serializer = PaymentProofSerializer(proofs, many=True)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    
+class PaymentProofByPaymentIdView(ListAPIView):
+    serializer_class = PaymentProofSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        payment_id = self.kwargs.get('payment_id')
+        return PaymentProof.objects.filter(payment_id=payment_id).order_by('-uploaded_at')
+    
+class UploadPaymentProofView(generics.CreateAPIView):
+    serializer_class = PaymentProofSerializer
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get_payment(self):
+        payment_id = self.kwargs.get("paymentId")
+        try:
+            return Payment.objects.get(id=payment_id)
+        except Payment.DoesNotExist:
+            raise NotFound("Payment not found")
+
+    def perform_create(self, serializer):
+        payment = self.get_payment()
+        serializer.save(payment=payment)
+        
+        
+class CommitteeTotalsView(APIView):
+    def get(self, request):
+        totals = {"cf": 0, "lac": 0, "pta": 0, "qaa": 0, "rhc": 0}
+        counts = {"cf": 0, "lac": 0, "pta": 0, "qaa": 0, "rhc": 0}
+
+        payments = Payment.objects.all()
+
+        for payment in payments:
+            for key in totals.keys():
+                value = getattr(payment, key)
+                try:
+                    value_float = float(value)
+                    totals[key] += value_float
+                    counts[key] += 1
+                except (TypeError, ValueError):
+                    continue
+
+        # Return totals and counts
+        data = {**totals, **{f"{k}_count": counts[k] for k in counts}}
+        return Response(data)

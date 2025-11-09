@@ -19,5 +19,11 @@ urlpatterns = [
     path('total-amount/<str:comittee_name>/', views.CommitteeTotalAmountView.as_view()),
     
     path('payment_filter/<int:student_id>/', views.StudentPaymentsView.as_view(), name='payment_filter'),
+    
+    path('update_payment/<int:payment_id>/', views.UpdatePaymentView.as_view(), name='update_payment'),
+    path('payment/<int:payment_id>/proofs/', views.PaymentProofByPaymentIdView.as_view(), name='payment-proofs'),
+    path('payments/<int:paymentId>/upload-proof/', views.UploadPaymentProofView.as_view(), name='upload-payment-proof'),
+    
+    path('committee-totals/', views.CommitteeTotalsView.as_view(), name='committee-totals'),
 
 ]
