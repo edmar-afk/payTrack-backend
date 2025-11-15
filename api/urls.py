@@ -15,6 +15,7 @@ urlpatterns = [
     path('payments/delete/<int:payment_id>/', views.PaymentDeleteView.as_view(), name='payment-delete'),
     path('payments/user/<int:user_id>/', views.UserPaymentsList.as_view(), name='user-payments'),
     path('submit-payment/<int:user_id>/', views.PaymentSubmitView.as_view(), name='submit-payment'),
+    path('students/', views.NonSuperUserListView.as_view(), name='students'),
     path('payment-type/<str:comittee_name>/', views.PaymentByCommitteeView.as_view(), name='payment-by-committee'),
     path('total-amount/<str:comittee_name>/', views.CommitteeTotalAmountView.as_view()),
     

@@ -65,24 +65,8 @@ class PaymentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Payment
-        fields = [
-            'id',
-            'student',       # full user + profile details
-            'proof',
-            'comittee_name',
-            'amount',
-            'semester',
-            'status',
-            'feedback',
-            'payment',
-            'date_issued',
-            'school_year',
-            'cf',
-            'lac',
-            'pta',
-            'qaa',
-            'rhc',
-        ]
+        fields = '__all__'
+
     
 
 class PaymentEditSerializer(serializers.ModelSerializer):

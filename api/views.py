@@ -7,7 +7,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser, FormParser
-from .serializers import CommitteeTotalsSerializer, PaymentProofSerializer, CommitteePaymentTotalSerializer, PaymentTypeSerializer, PaymentSubmitSerializer,PaymentEditSerializer, RegisterSerializer, ProfileSerializer, PaymentSerializer, PaymentDetailSerializer, PaymentDeleteSerializer
+from .serializers import UserSerializer, CommitteeTotalsSerializer, PaymentProofSerializer, CommitteePaymentTotalSerializer, PaymentTypeSerializer, PaymentSubmitSerializer,PaymentEditSerializer, RegisterSerializer, ProfileSerializer, PaymentSerializer, PaymentDetailSerializer, PaymentDeleteSerializer
 from .models import Profile, Payment, PaymentProof
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -102,7 +102,7 @@ class PaymentSubmitView(APIView):
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = PaymentSubmitSerializer(data=request.data)
+        serializer = PaymentSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(student=user)
             return Response({"success": "Payment submitted successfully."}, status=status.HTTP_201_CREATED)
@@ -236,3 +236,9 @@ class CommitteeTotalsView(APIView):
         # Return totals and counts
         data = {**totals, **{f"{k}_count": counts[k] for k in counts}}
         return Response(data)
+    
+class NonSuperUserListView(APIView):
+    def get(self, request):
+        users = User.objects.filter(is_superuser=False)
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
