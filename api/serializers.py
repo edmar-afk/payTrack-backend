@@ -72,7 +72,7 @@ class PaymentSerializer(serializers.ModelSerializer):
 class PaymentEditSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
-        fields = ['proof', 'comittee_name', 'amount', 'semester', 'status', 'feedback', 'payment']
+        fields = ['proof', 'comittee_name', 'amount', 'semester', 'status', 'feedback', 'payment', 'is_walk_in']
         extra_kwargs = {
             'proof': {'required': False},
             'comittee_name': {'required': False},
@@ -81,6 +81,7 @@ class PaymentEditSerializer(serializers.ModelSerializer):
             'status': {'required': False},
             'feedback': {'required': False},
             'payment': {'required': False},
+            'is_walk_in': {'required': False},
         }
         
         
@@ -101,6 +102,7 @@ class PaymentDetailSerializer(serializers.ModelSerializer):
             'pta',
             'qaa',
             'rhc',
+            'is_walk_in',
         ]
         
         
@@ -118,7 +120,8 @@ class PaymentSubmitSerializer(serializers.ModelSerializer):
             'lac',
             'pta',
             'qaa',
-            'rhc',]
+            'rhc',
+            'is_walk_in',]
         
 
 

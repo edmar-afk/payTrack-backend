@@ -38,6 +38,7 @@ class Payment(models.Model):
     pta = models.TextField(blank=True, null=True)
     qaa = models.TextField(blank=True, null=True)
     rhc = models.TextField(blank=True, null=True)
+    is_walk_in = models.BooleanField(default=False)
 
 
 class PaymentProof(models.Model):

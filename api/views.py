@@ -132,19 +132,29 @@ class CommitteeTotalAmountView(APIView):
     
 class StudentPaymentsView(APIView):
     def get(self, request, student_id):
-        school_year = request.GET.get('school_year', '2025-2026')
-        semester = request.GET.get('semester', 'First Semester')
+        school_year = request.GET.get('school_year')
+        semester = request.GET.get('semester')
+        is_walk_in = request.GET.get('is_walk_in')
 
+        payments = Payment.objects.filter(student_id=student_id)
 
-        payments = Payment.objects.filter(
-            student_id=student_id,
-            school_year=school_year,
-            semester=semester
-        ).order_by('-date_issued')
+        if school_year:
+            payments = payments.filter(school_year=school_year)
+
+        if semester:
+            payments = payments.filter(semester=semester)
+
+        # FIXED WALK-IN FILTER
+        if is_walk_in in ["true", "false"]:
+            payments = payments.filter(is_walk_in=(is_walk_in == "true"))
+
+        payments = payments.order_by("-date_issued")
 
         serializer = PaymentTypeSerializer(payments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+
+
+
     
 class UpdatePaymentView(APIView):
     def put(self, request, payment_id):
