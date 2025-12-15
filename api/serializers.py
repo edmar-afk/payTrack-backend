@@ -170,3 +170,9 @@ class CommitteeTotalsSerializer(serializers.Serializer):
     pta_total = serializers.FloatField()
     qaa_total = serializers.FloatField()
     rhc_total = serializers.FloatField()
+    
+    
+class RemovePaymentProofSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ["id"]

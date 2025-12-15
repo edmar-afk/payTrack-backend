@@ -26,5 +26,9 @@ urlpatterns = [
     path('payments/<int:paymentId>/upload-proof/', views.UploadPaymentProofView.as_view(), name='upload-payment-proof'),
     
     path('committee-totals/', views.CommitteeTotalsView.as_view(), name='committee-totals'),
+    path('payments/print/', views.print_payments_pdf),
+
+    path("payments/<int:payment_id>/remove-proof/", views.RemovePaymentProofView.as_view()),
+    path("payments/<str:committee>/", views.PaymentByCommitteeView.as_view()),
 
 ]

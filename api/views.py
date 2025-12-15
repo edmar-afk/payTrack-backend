@@ -7,7 +7,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser, FormParser
-from .serializers import UserSerializer, CommitteeTotalsSerializer, PaymentProofSerializer, CommitteePaymentTotalSerializer, PaymentTypeSerializer, PaymentSubmitSerializer,PaymentEditSerializer, RegisterSerializer, ProfileSerializer, PaymentSerializer, PaymentDetailSerializer, PaymentDeleteSerializer
+from .serializers import RemovePaymentProofSerializer, UserSerializer, CommitteeTotalsSerializer, PaymentProofSerializer, CommitteePaymentTotalSerializer, PaymentTypeSerializer, PaymentSubmitSerializer,PaymentEditSerializer, RegisterSerializer, ProfileSerializer, PaymentSerializer, PaymentDetailSerializer, PaymentDeleteSerializer
 from .models import Profile, Payment, PaymentProof
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -15,6 +15,10 @@ from rest_framework.generics import UpdateAPIView, GenericAPIView
 from rest_framework.generics import ListAPIView
 from rest_framework.exceptions import NotFound
 from django.db.models import Sum
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from django.http import HttpResponse
+
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -252,3 +256,111 @@ class NonSuperUserListView(APIView):
         users = User.objects.filter(is_superuser=False)
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+def print_payments_pdf(request):
+    semester = request.GET.get('semester', '')
+    school_year = request.GET.get('school_year', '')
+
+    payments = Payment.objects.filter(
+        semester__icontains=semester,
+        school_year__icontains=school_year, 
+        status='Accepted'
+    ).order_by('date_issued')
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'inline; filename="payments.pdf"'
+
+    p = canvas.Canvas(response, pagesize=letter)
+    width, height = letter
+
+    y = height - 50
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(50, y, "Payment Summary")
+    y -= 40
+
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(50, y, f"School Year: {school_year}")
+    y -= 20
+    p.drawString(50, y, f"Semester: {semester}")
+    y -= 30
+
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(50, y, "Payment Records")
+    y -= 25
+
+    p.setFont("Helvetica", 10)
+    for pay in payments:
+        if y < 150:
+            p.showPage()
+            y = height - 50
+            p.setFont("Helvetica", 10)
+
+        p.drawString(50, y, f"Payment ID: {pay.id}")
+        y -= 15
+        p.drawString(50, y, f"Student: {pay.student.get_full_name()}")
+        y -= 15
+        p.drawString(50, y, f"Committee: {pay.comittee_name}")
+        y -= 20
+
+        p.drawString(80, y, f"PTA (Parents Teacher Association): Php. {pay.pta or '0'}")
+        y -= 15
+        p.drawString(80, y, f"QAA (Quality Assurance Accreditation): Php. {pay.qaa or '0'}")
+        y -= 15
+        p.drawString(80, y, f"LAC (Library Advisory Committee): Php. {pay.lac or '0'}")
+        y -= 15
+        p.drawString(80, y, f"CF (Contingency Fund): Php. {pay.cf or '0'}")
+        y -= 15
+        p.drawString(80, y, f"RHC (Registrar Clinic): Php. {pay.rhc or '0'}")
+        y -= 25
+
+        p.drawString(80, y, f"Status: {pay.status}")
+        y -= 15
+        p.drawString(80, y, f"Date Issued: {pay.date_issued.strftime('%Y-%m-%d %H:%M')}")
+        y -= 30
+
+    p.showPage()
+    p.save()
+    return response
+
+
+
+class RemovePaymentProofView(APIView):
+    def delete(self, request, payment_id):
+        payment = get_object_or_404(Payment, id=payment_id)
+
+        if payment.proof:
+            payment.proof.delete(save=False)
+            payment.proof = None
+            payment.save()
+
+        proofs = PaymentProof.objects.filter(payment=payment)
+        for p in proofs:
+            if p.proof:
+                p.proof.delete(save=False)
+            p.delete()
+
+        serializer = RemovePaymentProofSerializer(payment)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+class PaymentByCommitteeView(APIView):
+    def get(self, request, committee):
+        allowed = ["cf", "lac", "pta", "qaa", "rhc"]
+
+        if committee not in allowed:
+            return Response(
+                {"error": "Invalid committee"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        filter_kwargs = {
+            f"{committee}__isnull": False,
+            # "status": "Accepted"
+        }
+        payments = Payment.objects.filter(**filter_kwargs).select_related("student")
+
+        serializer = PaymentSerializer(payments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
